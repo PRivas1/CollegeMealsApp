@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Search, ChefHat, List, Clock, Plus, Minus, BookOpen, Edit, Star, RefreshCw } from 'lucide-react'
+import { Search, ChefHat, List, Clock, Plus, Minus, BookOpen, Edit, Star, RefreshCw, User, LogIn, LogOut } from 'lucide-react'
 
 function App() {
   const [ingredients, setIngredients] = useState<string[]>([])
@@ -10,6 +10,9 @@ function App() {
   const [activeTab, setActiveTab] = useState<'ingredients' | 'recipes' | 'saved'>('ingredients')
   const [isLoading, setIsLoading] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [showAccountDropdown, setShowAccountDropdown] = useState(false)
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin')
 
   const handleAddIngredient = () => {
     if (inputValue.trim() && !ingredients.includes(inputValue.trim())) {
@@ -55,7 +58,6 @@ function App() {
       const textResponse = data.candidates[0].content.parts[0].text
       const newRecipes = JSON.parse(textResponse.replace(/```json|```/g, ''))
       
-      // Generate unique IDs for new recipes
       const recipesWithNewIds = newRecipes.map((recipe: any) => ({
         ...recipe,
         id: Date.now() + Math.random()
@@ -70,30 +72,27 @@ function App() {
       setActiveTab('recipes')
     } catch (error) {
       console.error('Error generating recipes:', error)
-      // Only generate mock recipes if we're not refreshing
-      if (!clearExisting) {
-        const mockRecipes = [
-          {
-            id: Date.now() + Math.random(),
-            title: "Vegetable Stir Fry",
-            prepTime: "15 mins",
-            cookTime: "10 mins",
-            ingredients: ["bell pepper", "carrot", "onion", "soy sauce"],
-            instructions: "1. Chop all vegetables\n2. Heat oil in pan\n3. Stir fry vegetables for 5 mins\n4. Add soy sauce and cook for 2 more mins",
-            description: "A quick and healthy vegetable stir fry with a savory soy sauce flavor."
-          },
-          {
-            id: Date.now() + Math.random(),
-            title: "Pasta Primavera",
-            prepTime: "10 mins",
-            cookTime: "15 mins",
-            ingredients: ["pasta", "tomato", "garlic", "basil"],
-            instructions: "1. Cook pasta\n2. Saute garlic and tomatoes\n3. Combine with pasta\n4. Garnish with basil",
-            description: "Simple pasta dish with fresh tomatoes and aromatic basil."
-          }
-        ]
-        setRecipes(clearExisting ? [] : [...recipes, ...mockRecipes])
-      }
+      const mockRecipes = [
+        {
+          id: Date.now() + Math.random(),
+          title: "Vegetable Stir Fry",
+          prepTime: "15 mins",
+          cookTime: "10 mins",
+          ingredients: ["bell pepper", "carrot", "onion", "soy sauce"],
+          instructions: "1. Chop all vegetables\n2. Heat oil in pan\n3. Stir fry vegetables for 5 mins\n4. Add soy sauce and cook for 2 more mins",
+          description: "A quick and healthy vegetable stir fry with a savory soy sauce flavor."
+        },
+        {
+          id: Date.now() + Math.random(),
+          title: "Pasta Primavera",
+          prepTime: "10 mins",
+          cookTime: "15 mins",
+          ingredients: ["pasta", "tomato", "garlic", "basil"],
+          instructions: "1. Cook pasta\n2. Saute garlic and tomatoes\n3. Combine with pasta\n4. Garnish with basil",
+          description: "Simple pasta dish with fresh tomatoes and aromatic basil."
+        }
+      ]
+      setRecipes(clearExisting ? mockRecipes : [...recipes, ...mockRecipes])
       setActiveTab('recipes')
     } finally {
       setIsLoading(false)
@@ -114,12 +113,151 @@ function App() {
     setSelectedRecipe(null)
   }
 
+  const handleAuth = () => {
+    setIsAuthenticated(true)
+  }
+
+  const toggleAuthMode = () => {
+    setAuthMode(authMode === 'signin' ? 'signup' : 'signin')
+  }
+
+  const handleLogout = () => {
+    setIsAuthenticated(false)
+    setShowAccountDropdown(false)
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 border border-[#AFC2D5]">
+          <div className="text-center mb-8">
+            <ChefHat size={48} className="mx-auto text-[#ECA72C]" />
+            <h1 className="text-3xl font-bold mt-4 text-[#0E1428]">Collegemeals.app</h1>
+            <p className="text-[#6EA4BF] mt-2">
+              {authMode === 'signin' ? 'Sign in to start cooking' : 'Create an account'}
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {authMode === 'signup' && (
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-[#0E1428] mb-1">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  className="w-full p-3 border border-[#0E1428] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ECA72C]"
+                  placeholder="Your Name"
+                />
+              </div>
+            )}
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-[#0E1428] mb-1">
+                Email
+              </label>
+              <input
+                type="email"
+                id="email"
+                className="w-full p-3 border border-[#0E1428] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ECA72C]"
+                placeholder="your@email.com"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-[#0E1428] mb-1">
+                Password
+              </label>
+              <input
+                type="password"
+                id="password"
+                className="w-full p-3 border border-[#0E1428] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ECA72C]"
+                placeholder="••••••••"
+              />
+            </div>
+
+            {authMode === 'signup' && (
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-[#0E1428] mb-1">
+                  Confirm Password
+                </label>
+                <input
+                  type="password"
+                  id="confirmPassword"
+                  className="w-full p-3 border border-[#0E1428] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ECA72C]"
+                  placeholder="••••••••"
+                />
+              </div>
+            )}
+
+            <button
+              onClick={handleAuth}
+              className="w-full py-3 bg-[#ECA72C] hover:bg-[#d89a26] text-[#0E1428] font-medium rounded-lg flex items-center justify-center gap-2"
+            >
+              {authMode === 'signin' ? (
+                <>
+                  <LogIn size={20} /> Sign In
+                </>
+              ) : (
+                'Create Account'
+              )}
+            </button>
+
+            <div className="text-center text-sm text-[#6EA4BF] mt-4">
+              {authMode === 'signin' ? (
+                <>
+                  Don't have an account?{' '}
+                  <button 
+                    onClick={toggleAuthMode}
+                    className="text-[#0E1428] hover:text-[#CE5534] font-medium"
+                  >
+                    Create one
+                  </button>
+                </>
+              ) : (
+                <>
+                  Already have an account?{' '}
+                  <button 
+                    onClick={toggleAuthMode}
+                    className="text-[#0E1428] hover:text-[#CE5534] font-medium"
+                  >
+                    Sign in
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-white">
       <header className="bg-[#0E1428] text-white p-4 shadow-md">
-        <div className="container mx-auto flex items-center gap-2">
-          <ChefHat size={32} className="text-[#ECA72C]" />
-          <h1 className="text-2xl font-bold">Collegemeals.app</h1>
+        <div className="container mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ChefHat size={32} className="text-[#ECA72C]" />
+            <h1 className="text-2xl font-bold">Collegemeals.app</h1>
+          </div>
+          <div className="relative">
+            <button 
+              onClick={() => setShowAccountDropdown(!showAccountDropdown)}
+              className="flex items-center gap-1 text-white hover:text-[#ECA72C]"
+            >
+              <User size={20} /> Account
+            </button>
+            {showAccountDropdown && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 border border-[#AFC2D5]">
+                <button
+                  onClick={handleLogout}
+                  className="block w-full text-left px-4 py-2 text-sm text-[#0E1428] hover:bg-[#AFC2D5] hover:bg-opacity-20 flex items-center gap-2"
+                >
+                  <LogOut size={16} /> Log Out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
