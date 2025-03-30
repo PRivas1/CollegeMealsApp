@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Lock, Mail, User } from 'lucide-react'
+import { Lock, Mail, User, ChefHat } from 'lucide-react'
 
 export default function LoginPage({ onLogin }: { onLogin: () => void }) {
   const [isLogin, setIsLogin] = useState(true)
@@ -14,7 +14,6 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
     e.preventDefault()
     setError('')
     
-    // Simple validation
     if (!email || !password) {
       setError('Please fill in all fields')
       return
@@ -25,7 +24,6 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
       return
     }
 
-    // Mock authentication
     onLogin()
     navigate('/app')
   }
@@ -34,10 +32,11 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
     <div className="min-h-screen bg-[#0E1428] flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden">
         <div className="bg-[#ECA72C] p-6 text-center">
-          <h1 className="text-2xl font-bold text-[#0E1428]">
-            {isLogin ? 'Welcome Back' : 'Create Account'}
-          </h1>
-          <p className="text-[#0E1428] mt-1">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <ChefHat size={32} className="text-[#0E1428]" />
+            <h1 className="text-2xl font-bold text-[#0E1428]">Collegemeals.app</h1>
+          </div>
+          <p className="text-[#0E1428]">
             {isLogin ? 'Sign in to continue' : 'Join us to get started'}
           </p>
         </div>

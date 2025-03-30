@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Search, ChefHat, List, Clock, Plus, Minus, BookOpen, Edit, Star, RefreshCw } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Search, ChefHat, List, Clock, Plus, Minus, BookOpen, Edit, Star, RefreshCw, User, Settings, LogOut } from 'lucide-react'
 
 export default function AppPage() {
   const [ingredients, setIngredients] = useState<string[]>([])
@@ -10,6 +11,8 @@ export default function AppPage() {
   const [activeTab, setActiveTab] = useState<'ingredients' | 'recipes' | 'saved'>('ingredients')
   const [isLoading, setIsLoading] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [showDropdown, setShowDropdown] = useState(false)
+  const navigate = useNavigate()
 
   const handleAddIngredient = () => {
     if (inputValue.trim() && !ingredients.includes(inputValue.trim())) {
@@ -55,7 +58,6 @@ export default function AppPage() {
       const textResponse = data.candidates[0].content.parts[0].text
       const newRecipes = JSON.parse(textResponse.replace(/```json|```/g, ''))
       
-      // Generate unique IDs for new recipes
       const recipesWithNewIds = newRecipes.map((recipe: any) => ({
         ...recipe,
         id: Date.now() + Math.random()
@@ -111,12 +113,49 @@ export default function AppPage() {
     setSelectedRecipe(null)
   }
 
+  const handleLogout = () => {
+    navigate('/')
+  }
+
   return (
     <div className="min-h-screen bg-white">
       <header className="bg-[#0E1428] text-white p-4 shadow-md">
-        <div className="container mx-auto flex items-center gap-2">
-          <ChefHat size={32} className="text-[#ECA72C]" />
-          <h1 className="text-2xl font-bold">Collegemeals.app</h1>
+        <div className="container mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ChefHat size={32} className="text-[#ECA72C]" />
+            <h1 className="text-2xl font-bold">Collegemeals.app</h1>
+          </div>
+          
+          <div className="relative">
+            <button 
+              onClick={() => setShowDropdown(!showDropdown)}
+              className="flex items-center gap-2 hover:bg-[#1a2542] p-2 rounded-lg transition-colors"
+            >
+              <User size={24} />
+            </button>
+            
+            {showDropdown && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-[#AFC2D5]">
+                <div className="py-1">
+                  <button
+                    onClick={() => {
+                      navigate('/settings')
+                      setShowDropdown(false)
+                    }}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-[#0E1428] hover:bg-[#AFC2D5] hover:bg-opacity-20"
+                  >
+                    <Settings size={16} /> Settings
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-[#0E1428] hover:bg-[#AFC2D5] hover:bg-opacity-20"
+                  >
+                    <LogOut size={16} /> Logout
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
