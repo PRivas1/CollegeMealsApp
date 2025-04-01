@@ -18,13 +18,13 @@ export default function PricingPage() {
       name: 'Monthly',
       price: '$7.99',
       period: 'month',
-      featured: true
+      featured: false
     },
     {
       name: 'Yearly',
       price: '$39.99',
       period: 'year',
-      featured: false,
+      featured: true,
       savings: 'Save 17%'
     }
   ]
