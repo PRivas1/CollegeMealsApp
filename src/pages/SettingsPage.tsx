@@ -1,15 +1,22 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, User, Mail, Lock } from 'lucide-react'
+import { ArrowLeft, User, Mail, Lock, CreditCard, AlertTriangle } from 'lucide-react'
 
 export default function SettingsPage() {
   const [name, setName] = useState('John Doe')
-  const [email, setEmail] = useState('john@example.com')
+  const email = 'john@example.com'
   const [password, setPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+  const [subscriptionStatus, setSubscriptionStatus] = useState({
+    active: true,
+    isTrial: true,
+    plan: 'Free Trial',
+    expires: '2023-12-31'
+  })
   const navigate = useNavigate()
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -22,8 +29,28 @@ export default function SettingsPage() {
       return
     }
 
-    // Mock update
     setSuccess('Account settings updated successfully')
+  }
+
+  const handleCancelSubscription = () => {
+    if (subscriptionStatus.isTrial || !subscriptionStatus.active) {
+      setError('Cannot cancel trial or inactive subscription')
+      setShowCancelConfirm(false)
+      return
+    }
+
+    setSubscriptionStatus({
+      ...subscriptionStatus,
+      active: false,
+      plan: 'None',
+      expires: ''
+    })
+    setShowCancelConfirm(false)
+    setSuccess('Subscription cancelled successfully')
+  }
+
+  const canCancelSubscription = () => {
+    return subscriptionStatus.active && !subscriptionStatus.isTrial
   }
 
   return (
@@ -40,8 +67,11 @@ export default function SettingsPage() {
         </div>
       </header>
 
-      <main className="container mx-auto p-4 max-w-3xl">
+      <main className="container mx-auto p-4 max-w-3xl space-y-6">
+        {/* Account Info Section */}
         <div className="bg-white rounded-xl shadow-lg p-6 border border-[#AFC2D5]">
+          <h2 className="text-xl font-semibold mb-4 text-[#0E1428]">Account Information</h2>
+          
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
               {error}
@@ -56,6 +86,21 @@ export default function SettingsPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1">
+              <label className="block text-sm font-medium text-[#0E1428]">Email</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail size={18} className="text-[#6EA4BF]" />
+                </div>
+                <input
+                  type="email"
+                  value={email}
+                  readOnly
+                  className="pl-10 w-full p-2 border border-[#AFC2D5] rounded-lg bg-gray-100 cursor-not-allowed"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
               <label className="block text-sm font-medium text-[#0E1428]">Name</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -65,21 +110,6 @@ export default function SettingsPage() {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="pl-10 w-full p-2 border border-[#AFC2D5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ECA72C]"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <label className="block text-sm font-medium text-[#0E1428]">Email</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail size={18} className="text-[#6EA4BF]" />
-                </div>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
                   className="pl-10 w-full p-2 border border-[#AFC2D5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ECA72C]"
                 />
               </div>
@@ -141,7 +171,81 @@ export default function SettingsPage() {
             </button>
           </form>
         </div>
+
+        {/* Subscription Section */}
+        <div className="bg-white rounded-xl shadow-lg p-6 border border-[#AFC2D5]">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-[#0E1428]">Subscription</h2>
+            <div className="flex items-center gap-2">
+              <CreditCard size={20} className="text-[#6EA4BF]" />
+              {subscriptionStatus.active ? (
+                <span className={`text-sm font-medium ${subscriptionStatus.isTrial ? 'text-[#ECA72C]' : 'text-green-600'}`}>
+                  {subscriptionStatus.plan} (expires {subscriptionStatus.expires})
+                </span>
+              ) : (
+                <span className="text-sm font-medium text-red-600">No active subscription</span>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {subscriptionStatus.active ? (
+              <>
+                <button
+                  onClick={() => navigate('/pricing')}
+                  className="w-full py-3 bg-[#ECA72C] text-[#0E1428] rounded-lg font-medium hover:bg-[#d89a26] transition-colors"
+                >
+                  {subscriptionStatus.isTrial ? 'Subscribe Now' : 'Change Plan'}
+                </button>
+                {!subscriptionStatus.isTrial && (
+                  <button
+                    onClick={() => setShowCancelConfirm(true)}
+                    className="w-full py-3 border border-red-500 text-red-500 hover:bg-red-50 rounded-lg font-medium transition-colors"
+                  >
+                    Cancel Subscription
+                  </button>
+                )}
+              </>
+            ) : (
+              <button
+                onClick={() => navigate('/pricing')}
+                className="w-full py-3 bg-[#0E1428] text-white rounded-lg font-medium hover:bg-[#1a2542] transition-colors"
+              >
+                Subscribe Now
+              </button>
+            )}
+          </div>
+        </div>
       </main>
+
+      {/* Cancel Confirmation Modal */}
+      {showCancelConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full">
+            <div className="flex items-center gap-3 mb-4">
+              <AlertTriangle size={24} className="text-red-500" />
+              <h3 className="text-xl font-semibold text-[#0E1428]">Cancel Subscription</h3>
+            </div>
+            <p className="text-[#0E1428] mb-6">
+              Are you sure you want to cancel your subscription? You'll lose access to premium features immediately.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowCancelConfirm(false)}
+                className="flex-1 py-2 border border-[#0E1428] text-[#0E1428] rounded-lg font-medium hover:bg-gray-100 transition-colors"
+              >
+                Keep Subscription
+              </button>
+              <button
+                onClick={handleCancelSubscription}
+                className="flex-1 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
+              >
+                Confirm Cancellation
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
