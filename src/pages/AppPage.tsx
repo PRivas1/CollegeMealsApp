@@ -29,44 +29,25 @@ export default function AppPage() {
     setIsLoading(true)
     if (clearExisting) setIsRefreshing(true)
     try {
-      const prompt = `Generate 5 simple recipes using these ingredients: ${ingredients.join(', ')}. 
-      For each recipe, provide:
-      1. Title
-      2. Prep time (in minutes)
-      3. Cook time (in minutes) 
-      4. List of ingredients (including the ones provided)
-      5. Step-by-step instructions
-      6. A short description of what the dish is
-      
-      Format as JSON array with these keys: id, title, prepTime, cookTime, ingredients, instructions, description`
-
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyBKiWG1cQvSXE4WbNTQahGHjahTiht-a4M`, {
+      const response = await fetch('http://localhost:3001/api/generate-recipes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }]
-        })
+        body: JSON.stringify({ ingredients })
       })
 
+      if (!response.ok) {
+        throw new Error('Failed to generate recipes')
+      }
+
       const data = await response.json()
-      const textResponse = data.candidates[0].content.parts[0].text
-      const newRecipes = JSON.parse(textResponse.replace(/```json|```/g, ''))
-      
-      const recipesWithNewIds = newRecipes.map((recipe: any) => ({
-        ...recipe,
-        id: Date.now() + Math.random()
-      }))
+      const newRecipes = data.recipes
       
       if (clearExisting) {
-        setRecipes(recipesWithNewIds)
+        setRecipes(newRecipes)
       } else {
-        setRecipes([...recipes, ...recipesWithNewIds])
+        setRecipes([...recipes, ...newRecipes])
       }
       
       setActiveTab('recipes')
