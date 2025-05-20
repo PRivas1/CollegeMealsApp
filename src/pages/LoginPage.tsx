@@ -1,31 +1,41 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Lock, Mail, User, ChefHat } from 'lucide-react'
+import { useAuth } from '../lib/AuthContext'
 
-export default function LoginPage({ onLogin }: { onLogin: () => void }) {
+export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [name, setName] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
+  const { signIn, signUp } = useAuth()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setIsLoading(true)
     
-    if (!email || !password) {
-      setError('Please fill in all fields')
-      return
+    try {
+      if (!email || !password || (!isLogin && !confirmPassword)) {
+        throw new Error('Please fill in all fields')
+      }
+      if (!isLogin && password !== confirmPassword) {
+        throw new Error('Passwords do not match')
+      }
+      if (isLogin) {
+        await signIn(email, password)
+      } else {
+        await signUp(email, password)
+      }
+      navigate('/app')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    } finally {
+      setIsLoading(false)
     }
-    
-    if (!isLogin && !name) {
-      setError('Please enter your name')
-      return
-    }
-
-    onLogin()
-    navigate('/app')
   }
 
   return (
@@ -48,24 +58,6 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
             </div>
           )}
 
-          {!isLogin && (
-            <div className="space-y-1">
-              <label className="block text-sm font-medium text-[#0E1428]">Name</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User size={18} className="text-[#6EA4BF]" />
-                </div>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="pl-10 w-full p-2 border border-[#AFC2D5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ECA72C]"
-                  placeholder="Your name"
-                />
-              </div>
-            </div>
-          )}
-
           <div className="space-y-1">
             <label className="block text-sm font-medium text-[#0E1428]">Email</label>
             <div className="relative">
@@ -77,7 +69,8 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="pl-10 w-full p-2 border border-[#AFC2D5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ECA72C]"
-                placeholder="your@email.com"
+                placeholder="you@email.com"
+                disabled={isLoading}
               />
             </div>
           </div>
@@ -94,42 +87,46 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
                 onChange={(e) => setPassword(e.target.value)}
                 className="pl-10 w-full p-2 border border-[#AFC2D5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ECA72C]"
                 placeholder="••••••••"
+                disabled={isLoading}
               />
             </div>
           </div>
 
+          {!isLogin && (
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-[#0E1428]">Confirm Password</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock size={18} className="text-[#6EA4BF]" />
+                </div>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="pl-10 w-full p-2 border border-[#AFC2D5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ECA72C]"
+                  placeholder="••••••••"
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+          )}
+
           <button
             type="submit"
-            className="w-full py-3 bg-[#0E1428] text-white rounded-lg font-medium hover:bg-[#1a2542] transition-colors"
+            className={`w-full py-3 bg-[#0E1428] text-white rounded-lg font-medium hover:bg-[#1a2542] transition-colors ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={isLoading}
           >
             {isLogin ? 'Sign In' : 'Sign Up'}
           </button>
 
-          <div className="text-center text-sm text-[#6EA4BF]">
-            {isLogin ? (
-              <>
-                Don't have an account?{' '}
-                <button
-                  type="button"
-                  onClick={() => setIsLogin(false)}
-                  className="text-[#ECA72C] hover:underline"
-                >
-                  Sign up
-                </button>
-              </>
-            ) : (
-              <>
-                Already have an account?{' '}
-                <button
-                  type="button"
-                  onClick={() => setIsLogin(true)}
-                  className="text-[#ECA72C] hover:underline"
-                >
-                  Sign in
-                </button>
-              </>
-            )}
-          </div>
+          <button
+            type="button"
+            onClick={() => setIsLogin(!isLogin)}
+            className="w-full text-center text-sm text-[#6EA4BF] hover:text-[#0E1428]"
+            disabled={isLoading}
+          >
+            {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
+          </button>
         </form>
       </div>
     </div>

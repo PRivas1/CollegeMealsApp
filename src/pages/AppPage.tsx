@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, ChefHat, List, Clock, Plus, Minus, BookOpen, Edit, Star, RefreshCw, User, Settings, LogOut } from 'lucide-react'
+import { Search, ChefHat, List, Clock, Plus, Minus, BookOpen, Edit, Star, RefreshCw, User, Settings, LogOut, LayoutDashboard } from 'lucide-react'
+import { useAuth } from '../lib/AuthContext'
+import { usePantry } from '../lib/usePantry'
 
 export default function AppPage() {
-  const [ingredients, setIngredients] = useState<string[]>([])
   const [inputValue, setInputValue] = useState('')
   const [recipes, setRecipes] = useState<any[]>([])
   const [savedRecipes, setSavedRecipes] = useState<any[]>([])
@@ -13,16 +14,36 @@ export default function AppPage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
   const navigate = useNavigate()
+  const { signOut } = useAuth()
+  const { pantryItems, loading: pantryLoading, addPantryItem, removePantryItem } = usePantry()
 
-  const handleAddIngredient = () => {
+  // Convert pantry items to ingredient strings for recipe generation
+  const ingredients = pantryItems.map(item => item.ingredient_name)
+
+  const handleAddIngredient = async () => {
     if (inputValue.trim() && !ingredients.includes(inputValue.trim())) {
-      setIngredients([...ingredients, inputValue.trim()])
-      setInputValue('')
+      try {
+        await addPantryItem({
+          ingredient_name: inputValue.trim(),
+          quantity: 1,
+          unit: 'piece'
+        })
+        setInputValue('')
+      } catch (error) {
+        console.error('Failed to add ingredient:', error)
+      }
     }
   }
 
-  const handleRemoveIngredient = (ingredient: string) => {
-    setIngredients(ingredients.filter(i => i !== ingredient))
+  const handleRemoveIngredient = async (ingredientName: string) => {
+    const item = pantryItems.find(item => item.ingredient_name === ingredientName)
+    if (item) {
+      try {
+        await removePantryItem(item.id)
+      } catch (error) {
+        console.error('Failed to remove ingredient:', error)
+      }
+    }
   }
 
   const generateRecipes = async (clearExisting = false) => {
@@ -94,8 +115,15 @@ export default function AppPage() {
     setSelectedRecipe(null)
   }
 
-  const handleLogout = () => {
-    navigate('/')
+  const handleLogout = async () => {
+    try {
+      await signOut()
+      navigate('/')
+    } catch (error) {
+      console.error('Error signing out:', error)
+      // Still navigate to login page even if there's an error
+      navigate('/')
+    }
   }
 
   return (
@@ -198,6 +226,7 @@ export default function AppPage() {
                           <button 
                             onClick={() => handleRemoveIngredient(ingredient)}
                             className="ml-2 text-[#0E1428] hover:text-[#CE5534]"
+                            disabled={pantryLoading}
                           >
                             <Minus size={16} />
                           </button>
@@ -208,11 +237,11 @@ export default function AppPage() {
 
                   <button
                     onClick={() => generateRecipes(true)}
-                    disabled={ingredients.length === 0 || isLoading}
-                    className={`w-full py-3 rounded-lg font-medium flex items-center justify-center gap-2 ${ingredients.length === 0 || isLoading ? 'bg-gray-300 cursor-not-allowed' : 'bg-[#ECA72C] hover:bg-[#d89a26] text-[#0E1428]'}`}
+                    disabled={ingredients.length === 0 || isLoading || pantryLoading}
+                    className={`w-full py-3 rounded-lg font-medium flex items-center justify-center gap-2 ${ingredients.length === 0 || isLoading || pantryLoading ? 'bg-gray-300 cursor-not-allowed' : 'bg-[#ECA72C] hover:bg-[#d89a26] text-[#0E1428]'}`}
                   >
-                    {isLoading ? (
-                      'Generating...'
+                    {isLoading || pantryLoading ? (
+                      'Loading...'
                     ) : (
                       <>
                         <Search size={20} /> Generate Recipes

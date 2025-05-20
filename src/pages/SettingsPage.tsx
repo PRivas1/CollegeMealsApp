@@ -1,15 +1,18 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, User, Mail, Lock, CreditCard, AlertTriangle } from 'lucide-react'
+import { useAuth } from '../lib/AuthContext'
+import { supabase } from '../lib/supabase'
 
 export default function SettingsPage() {
-  const [name, setName] = useState('John Doe')
-  const email = 'john@example.com'
+  const { user, updateProfile } = useAuth()
+  const [email, setEmail] = useState(user?.email || '')
   const [password, setPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [subscriptionStatus, setSubscriptionStatus] = useState({
     active: true,
@@ -19,17 +22,49 @@ export default function SettingsPage() {
   })
   const navigate = useNavigate()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setSuccess('')
+    setIsLoading(true)
 
-    if (newPassword && newPassword !== confirmPassword) {
-      setError('New passwords do not match')
-      return
+    try {
+      // Validate password fields
+      if (newPassword) {
+        if (newPassword.length < 6) {
+          throw new Error('New password must be at least 6 characters long')
+        }
+        if (newPassword !== confirmPassword) {
+          throw new Error('New passwords do not match')
+        }
+        if (!password) {
+          throw new Error('Please enter your current password to change it')
+        }
+      } else {
+        throw new Error('Please enter a new password to change it')
+      }
+
+      // Update password if provided
+      if (newPassword) {
+        const { error: updateError } = await supabase.auth.updateUser({
+          password: newPassword
+        })
+        if (updateError) throw updateError
+      }
+
+      // Clear password fields and show success message
+      setPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+      setSuccess('Password updated successfully')
+    } catch (err) {
+      console.error('Error updating settings:', err)
+      setError(err instanceof Error ? err.message : 'Failed to update settings')
+    } finally {
+      setTimeout(() => {
+        setIsLoading(false)
+      }, 500)
     }
-
-    setSuccess('Account settings updated successfully')
   }
 
   const handleCancelSubscription = () => {
@@ -101,21 +136,6 @@ export default function SettingsPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="block text-sm font-medium text-[#0E1428]">Name</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User size={18} className="text-[#6EA4BF]" />
-                </div>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="pl-10 w-full p-2 border border-[#AFC2D5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ECA72C]"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1">
               <label className="block text-sm font-medium text-[#0E1428]">Current Password</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -127,6 +147,7 @@ export default function SettingsPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   className="pl-10 w-full p-2 border border-[#AFC2D5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ECA72C]"
                   placeholder="••••••••"
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -143,6 +164,7 @@ export default function SettingsPage() {
                   onChange={(e) => setNewPassword(e.target.value)}
                   className="pl-10 w-full p-2 border border-[#AFC2D5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ECA72C]"
                   placeholder="••••••••"
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -159,15 +181,17 @@ export default function SettingsPage() {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="pl-10 w-full p-2 border border-[#AFC2D5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ECA72C]"
                   placeholder="••••••••"
+                  disabled={isLoading}
                 />
               </div>
             </div>
 
             <button
               type="submit"
-              className="w-full py-3 bg-[#0E1428] text-white rounded-lg font-medium hover:bg-[#1a2542] transition-colors"
+              disabled={isLoading}
+              className={`w-full py-3 bg-[#0E1428] text-white rounded-lg font-medium hover:bg-[#1a2542] transition-colors ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              Save Changes
+              {isLoading ? 'Saving Changes...' : 'Save Changes'}
             </button>
           </form>
         </div>
