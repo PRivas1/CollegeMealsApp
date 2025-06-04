@@ -32,4 +32,4 @@ A minimal AI-powered web app that helps college students quickly turn ingredient
 
 ## Related
 
-- Backend repo: [CollegeMeals Server](https://github.com/PRivas1/CollegeMeals-Server)
+- Backend repo: [CollegeMeals Server](https://github.com/PRivas1/CollegeMealsServer)
