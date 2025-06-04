@@ -44,7 +44,7 @@ export default function AppPage() {
     setIsLoading(true)
     if (clearExisting) setIsRefreshing(true)
     try {
-      const response = await fetch('http://localhost:3001/api/generate-recipes', {
+      const response = await fetch('https://collegemealsserver.onrender.com/api/generate-recipes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
