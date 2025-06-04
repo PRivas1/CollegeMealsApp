@@ -1,21 +1,15 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Search, ChefHat, List, Clock, Plus, Minus, BookOpen, Edit, Star, RefreshCw, User, Settings, LogOut, LayoutDashboard } from 'lucide-react'
-import { useAuth } from '../lib/AuthContext'
+import { useState } from 'react'
+import { Search, ChefHat, List, Clock, Plus, Minus, BookOpen, Edit, Star, RefreshCw } from 'lucide-react'
 import { usePantry } from '../lib/usePantry'
 
 export default function AppPage() {
   const [inputValue, setInputValue] = useState('')
   const [recipes, setRecipes] = useState<any[]>([])
-  const [savedRecipes, setSavedRecipes] = useState<any[]>([])
   const [selectedRecipe, setSelectedRecipe] = useState<any>(null)
   const [activeTab, setActiveTab] = useState<'ingredients' | 'recipes' | 'saved'>('ingredients')
   const [isLoading, setIsLoading] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [showDropdown, setShowDropdown] = useState(false)
-  const navigate = useNavigate()
-  const { signOut } = useAuth()
-  const { pantryItems, loading: pantryLoading, addPantryItem, removePantryItem } = usePantry()
+  const { pantryItems, loading: pantryLoading, addPantryItem, removePantryItem, savedRecipes, saveRecipe, removeSavedRecipe, isRecipeSaved } = usePantry()
 
   // Convert pantry items to ingredient strings for recipe generation
   const ingredients = pantryItems.map(item => item.ingredient_name)
@@ -53,7 +47,7 @@ export default function AppPage() {
       const response = await fetch('http://localhost:3001/api/generate-recipes', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ ingredients })
       })
@@ -102,28 +96,29 @@ export default function AppPage() {
     }
   }
 
-  const toggleSavedRecipe = (recipe: any) => {
-    if (savedRecipes.some(r => r.id === recipe.id)) {
-      setSavedRecipes(savedRecipes.filter(r => r.id !== recipe.id))
-    } else {
-      setSavedRecipes([...savedRecipes, recipe])
+  const handleToggleSavedRecipe = async (recipe: any) => {
+    try {
+      if (isRecipeSaved(recipe.id)) {
+        await removeSavedRecipe(recipe.id)
+        alert('Recipe removed from saved recipes!')
+      } else {
+        await saveRecipe({
+          recipe_id: recipe.id,
+          recipe_name: recipe.title,
+          recipe_image: '',
+          recipe_data: recipe,
+        })
+        alert('Recipe saved!')
+      }
+    } catch (err) {
+      alert('Failed to save/remove recipe. Please try again.')
+      console.error(err)
     }
   }
 
   const handleTabChange = (tab: 'ingredients' | 'recipes' | 'saved') => {
     setActiveTab(tab)
     setSelectedRecipe(null)
-  }
-
-  const handleLogout = async () => {
-    try {
-      await signOut()
-      navigate('/')
-    } catch (error) {
-      console.error('Error signing out:', error)
-      // Still navigate to login page even if there's an error
-      navigate('/')
-    }
   }
 
   return (
@@ -133,37 +128,6 @@ export default function AppPage() {
           <div className="flex items-center gap-2">
             <ChefHat size={32} className="text-[#ECA72C]" />
             <h1 className="text-2xl font-bold">Collegemeals.app</h1>
-          </div>
-          
-          <div className="relative">
-            <button 
-              onClick={() => setShowDropdown(!showDropdown)}
-              className="flex items-center gap-2 hover:bg-[#1a2542] p-2 rounded-lg transition-colors"
-            >
-              <User size={24} />
-            </button>
-            
-            {showDropdown && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-[#AFC2D5]">
-                <div className="py-1">
-                  <button
-                    onClick={() => {
-                      navigate('/settings')
-                      setShowDropdown(false)
-                    }}
-                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-[#0E1428] hover:bg-[#AFC2D5] hover:bg-opacity-20"
-                  >
-                    <Settings size={16} /> Settings
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-[#0E1428] hover:bg-[#AFC2D5] hover:bg-opacity-20"
-                  >
-                    <LogOut size={16} /> Logout
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </header>
@@ -276,13 +240,13 @@ export default function AppPage() {
                           <button 
                             onClick={(e) => {
                               e.stopPropagation()
-                              toggleSavedRecipe(recipe)
+                              handleToggleSavedRecipe(recipe)
                             }}
                             className="text-[#ECA72C] hover:text-[#d89a26]"
                           >
                             <Star 
                               size={20} 
-                              fill={savedRecipes.some(r => r.id === recipe.id) ? "#ECA72C" : "none"} 
+                              fill={isRecipeSaved(recipe.id) ? "#ECA72C" : "none"} 
                             />
                           </button>
                         </div>
@@ -314,27 +278,27 @@ export default function AppPage() {
                       <div 
                         key={recipe.id} 
                         className="border border-[#0E1428] rounded-lg p-4 hover:bg-[#AFC2D5] hover:bg-opacity-20 cursor-pointer transition-colors"
-                        onClick={() => setSelectedRecipe(recipe)}
+                        onClick={() => setSelectedRecipe(recipe.recipe_data)}
                       >
                         <div className="flex justify-between">
-                          <h3 className="font-medium text-lg text-[#0E1428]">{recipe.title}</h3>
+                          <h3 className="font-medium text-lg text-[#0E1428]">{recipe.recipe_data.title}</h3>
                           <button 
                             onClick={(e) => {
                               e.stopPropagation()
-                              toggleSavedRecipe(recipe)
+                              handleToggleSavedRecipe(recipe.recipe_data)
                             }}
                             className="text-[#ECA72C] hover:text-[#d89a26]"
                           >
                             <Star size={20} fill="#ECA72C" />
                           </button>
                         </div>
-                        <p className="text-sm text-[#6EA4BF] mt-1">{recipe.description}</p>
+                        <p className="text-sm text-[#6EA4BF] mt-1">{recipe.recipe_data.description}</p>
                         <div className="flex gap-4 mt-2 text-sm text-[#6EA4BF]">
                           <span className="flex items-center gap-1">
-                            <Clock size={14} /> Prep: {recipe.prepTime}
+                            <Clock size={14} /> Prep: {recipe.recipe_data.prepTime}
                           </span>
                           <span className="flex items-center gap-1">
-                            <Clock size={14} /> Cook: {recipe.cookTime}
+                            <Clock size={14} /> Cook: {recipe.recipe_data.cookTime}
                           </span>
                         </div>
                       </div>
@@ -354,12 +318,12 @@ export default function AppPage() {
                 ← Back to recipes
               </button>
               <button 
-                onClick={() => toggleSavedRecipe(selectedRecipe)}
+                onClick={() => handleToggleSavedRecipe(selectedRecipe)}
                 className="text-[#ECA72C] hover:text-[#d89a26]"
               >
                 <Star 
                   size={24} 
-                  fill={savedRecipes.some(r => r.id === selectedRecipe.id) ? "#ECA72C" : "none"} 
+                  fill={isRecipeSaved(selectedRecipe.id) ? "#ECA72C" : "none"} 
                 />
               </button>
             </div>
@@ -392,7 +356,15 @@ export default function AppPage() {
               
               <div>
                 <h3 className="text-lg font-semibold mb-3 text-[#0E1428]">Instructions</h3>
-                <div className="whitespace-pre-line text-[#0E1428]">{selectedRecipe.instructions}</div>
+                <ul className="space-y-2">
+                  {selectedRecipe.instructions
+                    .split(/\n|(?=\d+\.)/)
+                    .map((step: string, i: number) => (
+                      step.trim() && (
+                        <li key={i} className="text-[#0E1428]">{step.trim()}</li>
+                      )
+                    ))}
+                </ul>
               </div>
             </div>
           </div>
