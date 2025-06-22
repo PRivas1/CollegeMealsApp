@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Search, ChefHat, List, Clock, Plus, Minus, BookOpen, Edit, Star, RefreshCw } from 'lucide-react'
 import { usePantry } from '../lib/usePantry'
+import { Analytics } from "@vercel/analytics/next"
 
 export default function AppPage() {
   const [inputValue, setInputValue] = useState('')
